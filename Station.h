@@ -14,7 +14,7 @@ struct connection {
 };
 class Station {
     std::string _name;
-    std::unordered_map<Station *, connection> _connections;
+    std::unordered_map<Station*, connection> _connections;
 
 public:
     Station(std::string stationName);

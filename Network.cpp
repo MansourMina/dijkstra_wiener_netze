@@ -29,3 +29,7 @@ Station* Network::get_station(std::string stationName) {
     }
     return nullptr;
 }
+
+std::vector<Line*> Network::get_network() const {
+    return _network;
+}

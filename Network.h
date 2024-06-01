@@ -17,6 +17,7 @@ public:
     void add_line(Line* line);
     Line* get_line(std::string line);
     Station* get_station(std::string stationName);
+    std::vector<Line*>get_network() const;
 };
 
 
