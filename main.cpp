@@ -11,35 +11,14 @@
 #include <limits>
 #include <chrono>
 
-void setup(std::string &fileGraph, Network *network, std::string &start, std::string &end) {
-    // do {
-    //     std::cout << "Network:";
-    //     if (!(std::cin >> fileGraph)) {
-    //         std::cin.clear();
-    //         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    //     }
-    // }while(fileGraph.length <= 0);
+using StationPair = std::pair<int, Station *>;
 
-    while (true) {
-        std::cout << "Start:";
-        if (!(std::cin >> start)) {
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        }
-        if (start.length() > 0 && network->get_station(start)) break;
-        std::cout << "Station not found!" << std::endl;
-    }
+struct pathStruct {
+    Station *station;
+    int weight;
+    std::string line;
+};
 
-    while (true) {
-        std::cout << "Destination:";
-        if (!(std::cin >> end)) {
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        }
-        if (end.length() > 0 && network->get_station(end)) break;
-        std::cout << "Station not found!" << std::endl;
-    }
-}
 
 void load_data(std::string filename, Network *network) {
     std::ifstream file;
@@ -97,17 +76,42 @@ void load_data(std::string filename, Network *network) {
     file.close();
 }
 
-using StationPair = std::pair<int, Station *>;
+void setup(std::string &fileGraph, Network *network, std::string &start, std::string &end) {
+    do {
+        std::cout << "Network:";
+        if (!(std::cin >> fileGraph)) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+    } while (fileGraph.length() <= 0);
 
-struct pathStruct {
-    Station *station;
-    int weight;
-    std::string line;
-};
+    load_data(fileGraph, network);
+
+    while (true) {
+        std::cout << "Start (" << network->get_name() << "):";
+        if (!(std::cin >> start)) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+        if (start.length() > 0 && network->get_station(start)) break;
+        std::cout << "Station not found!" << std::endl;
+    }
+
+    while (true) {
+        std::cout << "Destination (" << network->get_name() << "):";
+        if (!(std::cin >> end)) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+        if (end.length() > 0 && network->get_station(end)) break;
+        std::cout << "Station not found!" << std::endl;
+    }
+}
+
 
 std::vector<pathStruct> buildPath(std::unordered_map<Station *, int> dist,
                                   std::unordered_map<Station *, std::pair<Station *, std::string> > prev,
-                                  Station *startStation, Station *endStation) {
+                                  Station *endStation) {
     std::vector<pathStruct> path;
 
     for (auto at = endStation; at != nullptr; at = prev[at].first) {
@@ -117,12 +121,11 @@ std::vector<pathStruct> buildPath(std::unordered_map<Station *, int> dist,
         ps.line = prev[at].second;
         path.push_back(ps);
     }
-
+    std::reverse(path.begin(), path.end());
     return path;
 }
 
-std::vector<pathStruct> find_path(const std::string &fileGraph, Network *network, const std::string &start,
-                                  const std::string &end) {
+std::vector<pathStruct> find_path(Network *network, const std::string &start, const std::string &end) {
     using StationPair = std::pair<int, Station *>;
     std::priority_queue<StationPair, std::vector<StationPair>, std::greater<StationPair> > minHeap;
     std::unordered_map<Station *, int> dist;
@@ -151,10 +154,7 @@ std::vector<pathStruct> find_path(const std::string &fileGraph, Network *network
             }
         }
     }
-
-    auto path = buildPath(dist, prev, startStation, endStation);
-    std::reverse(path.begin(), path.end());
-    return path;
+    return buildPath(dist, prev, endStation);
 }
 
 std::string getCurrentTime(const int addedTime = 0) {
@@ -169,19 +169,21 @@ std::string getCurrentTime(const int addedTime = 0) {
 
 void printPath(std::vector<pathStruct> path) {
     std::string currLine = path[1].line;
-    std::cout << "\n\nFrom: " << path.begin()->station->get_name() << std::endl;
+    std::cout << "\nFrom: " << path.begin()->station->get_name() << std::endl;
+    std::cout << " | " << std::endl;
     std::cout << "To: " << path.back().station->get_name() << std::endl;
     std::cout << std::endl;
 
     std::cout << "|" << path[1].line << std::endl;
     for (auto it = path.begin(); it != path.end(); ++it) {
-        if (it->line != currLine && it != path.begin()) {
+        if (it->line != currLine && it != path.begin())
             std::cout << "|" << it->line << std::endl;
-        }
-        std::cout << "  " << it->station->get_name();
-        if (it == path.begin()) std::cout <<  std::setw(20) <<  getCurrentTime() << " (Now)";
-        else if (std::next(it) == path.end() || it->line != currLine && it != path.begin()) {
-            std::cout <<  std::setw(20)  << getCurrentTime(it->weight) << " (in " << it->weight << " min)";
+
+        std::cout << "  " << std::left << std::setw(30) << it->station->get_name();
+        if (it == path.begin())
+            std::cout << std::right << std::setw(10) << getCurrentTime() << " (Now)";
+        else if (std::next(it) == path.end() || (it->line != currLine && it != path.begin())) {
+            std::cout << std::right << std::setw(10) << getCurrentTime(it->weight) << " (in " << it->weight << " min)";
             currLine = it->line;
         }
         std::cout << std::endl;
@@ -190,24 +192,17 @@ void printPath(std::vector<pathStruct> path) {
 
 
 int main() {
-    Network *network = new Network("Wiener Netze");
-    std::string fileGraph = "C:\\Users\\manso\\Downloads\\ADS_Programmieraufgabe3_WienerVerkehrsNetz.txt";
-    load_data(fileGraph, network);
-
-    std::string start, end;
+    Network *network = new Network("Stadt Wien");
+    std::string fileGraph, start, end;
+    //C:\Users\manso\Downloads\ADS_Programmieraufgabe3_WienerVerkehrsNetz.txt
     setup(fileGraph, network, start, end);
-    auto path = find_path(fileGraph, network, start, end);
+
+    auto ExStart = std::chrono::high_resolution_clock::now();
+    auto path = find_path(network, start, end);
+    auto ExStop = std::chrono::high_resolution_clock::now();
+
     printPath(path);
-
-
-    // Station* station = network->get_station("Stephansplatz");
-    // if(station) {
-    //     for(auto [stationName, connection]: station->get_connections()) {
-    //         std::cout << "To: " << stationName->get_name() << " Fahrzeit: " << connection.weight << " Line: " << connection.line << std::endl;
-    //     }
-    // }
-
-
-    //find_path(fileGraph, start, end);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(ExStop - ExStart).count();
+    std::cout << "\n\nDijsktra Execution time: " << duration << " milliseconds" << std::endl;
     return 0;
 }

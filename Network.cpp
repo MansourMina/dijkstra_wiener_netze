@@ -8,6 +8,10 @@ Network::Network(std::string name) {
     _name = name;
 }
 
+std::string Network::get_name() const {
+    return _name;
+}
+
 void Network::add_line(Line *newLine) {
     if (!get_line(newLine->get_name()))
         _network.push_back(newLine);

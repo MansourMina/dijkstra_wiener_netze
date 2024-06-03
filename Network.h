@@ -14,6 +14,7 @@ class Network {
     std::string _name;
 public:
     Network(std::string name);
+    std::string get_name() const;
     void add_line(Line* line);
     Line* get_line(std::string line);
     Station* get_station(std::string stationName);
