@@ -8,6 +8,7 @@
 #include "Station.h"
 #include "Line.h"
 #include <algorithm>
+#include <bits/stdc++.h>
 
 class Network {
     std::vector<Line*> _network;

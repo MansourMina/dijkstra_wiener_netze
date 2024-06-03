@@ -24,6 +24,7 @@ Line *Network::get_line(std::string line) {
     return nullptr;
 }
 
+
 Station *Network::get_station(std::string stationName) {
     for (auto cline: _network) {
         Station *station = cline->get_station(stationName);

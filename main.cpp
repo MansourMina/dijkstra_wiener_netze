@@ -20,6 +20,9 @@ struct pathStruct {
 };
 
 
+
+
+
 void load_data(std::string filename, Network *network) {
     std::ifstream file;
     file.open(filename);
@@ -76,6 +79,12 @@ void load_data(std::string filename, Network *network) {
     file.close();
 }
 
+bool valid_file(std::string &file) {
+    std::fstream fileStream;
+    fileStream.open(file);
+    return !fileStream.fail();
+}
+
 void setup(std::string &fileGraph, Network *network, std::string &start, std::string &end) {
     do {
         std::cout << "Network:";
@@ -83,7 +92,7 @@ void setup(std::string &fileGraph, Network *network, std::string &start, std::st
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         }
-    } while (fileGraph.length() <= 0);
+    } while (fileGraph.length() <= 0 || !valid_file(fileGraph));
 
     load_data(fileGraph, network);
 
@@ -106,6 +115,7 @@ void setup(std::string &fileGraph, Network *network, std::string &start, std::st
         if (end.length() > 0 && network->get_station(end)) break;
         std::cout << "Station not found!" << std::endl;
     }
+
 }
 
 
@@ -170,7 +180,7 @@ std::string getCurrentTime(const int addedTime = 0) {
 void printPath(std::vector<pathStruct> path) {
     std::string currLine = path[1].line;
     std::cout << "\nFrom: " << path.begin()->station->get_name() << std::endl;
-    std::cout << " | " << std::endl;
+    std::cout << "| " << std::endl;
     std::cout << "To: " << path.back().station->get_name() << std::endl;
     std::cout << std::endl;
 
@@ -194,15 +204,15 @@ void printPath(std::vector<pathStruct> path) {
 int main() {
     Network *network = new Network("Stadt Wien");
     std::string fileGraph, start, end;
-    //C:\Users\manso\Downloads\ADS_Programmieraufgabe3_WienerVerkehrsNetz.txt
     setup(fileGraph, network, start, end);
 
     auto ExStart = std::chrono::high_resolution_clock::now();
     auto path = find_path(network, start, end);
     auto ExStop = std::chrono::high_resolution_clock::now();
-
     printPath(path);
+
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(ExStop - ExStart).count();
-    std::cout << "\n\nDijsktra Execution time: " << duration << " milliseconds" << std::endl;
+    std::cout << "\n\nDijsktra Execution time: " << duration << " ms" << std::endl;
+
     return 0;
 }

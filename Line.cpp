@@ -12,9 +12,16 @@ std::vector<Station*> Line::get_stations() const {
     return  _stations;
 }
 
+std::string toLower(std::string letter) {
+    for (auto& x : letter) {
+        x = tolower(x);
+    }
+    return letter;
+}
+
 Station* Line::get_station(std::string name) const {
     for(auto station: _stations) {
-        if(station->get_name() == name) return station;
+        if(toLower(station->get_name()) == toLower(name)) return station;
     }
     return nullptr;
 }
