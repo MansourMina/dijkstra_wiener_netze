@@ -8,23 +8,37 @@
 #include <queue>
 #include <algorithm>
 #include <iomanip>
+#include <limits>
+#include <chrono>
 
+void setup(std::string &fileGraph, Network *network, std::string &start, std::string &end) {
+    // do {
+    //     std::cout << "Network:";
+    //     if (!(std::cin >> fileGraph)) {
+    //         std::cin.clear();
+    //         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    //     }
+    // }while(fileGraph.length <= 0);
 
-void setup(std::string &fileGraph, std::string &start, std::string &end) {
-    do {
-        std::cout << "Network: ";
-        std::cin >> fileGraph;
-    } while (fileGraph.length() <= 0);
+    while (true) {
+        std::cout << "Start:";
+        if (!(std::cin >> start)) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+        if (start.length() > 0 && network->get_station(start)) break;
+        std::cout << "Station not found!" << std::endl;
+    }
 
-    do {
-        std::cout << "Start: ";
-        std::cin >> start;
-    } while (start.length() <= 0);
-
-    do {
-        std::cout << "End: ";
-        std::cin >> end;
-    } while (end.length() <= 0);
+    while (true) {
+        std::cout << "Destination:";
+        if (!(std::cin >> end)) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+        if (end.length() > 0 && network->get_station(end)) break;
+        std::cout << "Station not found!" << std::endl;
+    }
 }
 
 void load_data(std::string filename, Network *network) {
@@ -107,9 +121,8 @@ std::vector<pathStruct> buildPath(std::unordered_map<Station *, int> dist,
     return path;
 }
 
-std::vector<pathStruct> find_path(std::string fileGraph, Network *network, std::string start, std::string end) {
-    load_data(fileGraph, network);
-
+std::vector<pathStruct> find_path(const std::string &fileGraph, Network *network, const std::string &start,
+                                  const std::string &end) {
     using StationPair = std::pair<int, Station *>;
     std::priority_queue<StationPair, std::vector<StationPair>, std::greater<StationPair> > minHeap;
     std::unordered_map<Station *, int> dist;
@@ -130,15 +143,9 @@ std::vector<pathStruct> find_path(std::string fileGraph, Network *network, std::
         int distance = minHeap.top().first;
         Station *currStation = minHeap.top().second;
         minHeap.pop();
-
-        if (currStation == endStation) {
-            break;
-        }
         for (auto &[adjStation, connection]: currStation->get_connections()) {
-            int edgeWeight = connection.weight;
-
-            if (distance + edgeWeight < dist[adjStation]) {
-                dist[adjStation] = distance + edgeWeight;
+            if (distance + connection.weight < dist[adjStation]) {
+                dist[adjStation] = distance + connection.weight;
                 prev[adjStation] = std::make_pair(currStation, connection.line);
                 minHeap.push(std::make_pair(dist[adjStation], adjStation));
             }
@@ -150,18 +157,34 @@ std::vector<pathStruct> find_path(std::string fileGraph, Network *network, std::
     return path;
 }
 
+std::string getCurrentTime(const int addedTime = 0) {
+    std::stringstream ss;
+    auto now = std::chrono::system_clock::now();
+    auto calculateTime = now + std::chrono::minutes(addedTime);
+    std::time_t future_time_t = std::chrono::system_clock::to_time_t(calculateTime);
+    std::tm *time = std::localtime(&future_time_t);
+    ss << std::put_time(time, "%H:%M");
+    return ss.str();
+}
+
 void printPath(std::vector<pathStruct> path) {
-    std::string currLine;
-    std::cout << "From: " << path.begin()->station->get_name() << std::endl;
+    std::string currLine = path[1].line;
+    std::cout << "\n\nFrom: " << path.begin()->station->get_name() << std::endl;
     std::cout << "To: " << path.back().station->get_name() << std::endl;
     std::cout << std::endl;
+
+    std::cout << "|" << path[1].line << std::endl;
     for (auto it = path.begin(); it != path.end(); ++it) {
-        if (it->line != currLine) {
-            std::cout << "Line: " << it->line << std::endl;
+        if (it->line != currLine && it != path.begin()) {
+            std::cout << "|" << it->line << std::endl;
+        }
+        std::cout << "  " << it->station->get_name();
+        if (it == path.begin()) std::cout <<  std::setw(20) <<  getCurrentTime() << " (Now)";
+        else if (std::next(it) == path.end() || it->line != currLine && it != path.begin()) {
+            std::cout <<  std::setw(20)  << getCurrentTime(it->weight) << " (in " << it->weight << " min)";
             currLine = it->line;
         }
-        std::cout << std::setw(4) << it->station->get_name() << std::endl;
-        if(std::next(it) != path.end())std::cout << std::setw(4) << "." << std::endl;
+        std::cout << std::endl;
     }
 }
 
@@ -169,7 +192,11 @@ void printPath(std::vector<pathStruct> path) {
 int main() {
     Network *network = new Network("Wiener Netze");
     std::string fileGraph = "C:\\Users\\manso\\Downloads\\ADS_Programmieraufgabe3_WienerVerkehrsNetz.txt";
-    auto path = find_path(fileGraph, network, "Vorgartenstrasse", "Stadion");
+    load_data(fileGraph, network);
+
+    std::string start, end;
+    setup(fileGraph, network, start, end);
+    auto path = find_path(fileGraph, network, start, end);
     printPath(path);
 
 
@@ -180,8 +207,6 @@ int main() {
     //     }
     // }
 
-    //std::string fileGraph, start, end;
-    //setup(fileGraph, start, end);
 
     //find_path(fileGraph, start, end);
     return 0;
